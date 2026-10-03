@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>餐飲廠商用量整合管理系統</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+:root{--paper:#f7efe0;--paper-deep:#ede0c8;--ink:#2a1418;--ink-soft:#5a4640;--muted:#8a7a6e;--brand-red:#7a1620;--brand-red-deep:#5a0f18;--brand-gold:#c9a35c;--brand-gold-light:#e2c485;--strike:#c14a3a;--keep:#5e7d4f;--rule:#d8c8a8;}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;}
+body{font-family:-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;background:var(--paper);color:var(--ink);line-height:1.6;font-size:15px;-webkit-font-smoothing:antialiased;}
+button{font-family:inherit;}
+input,select,textarea{font-family:inherit;font-size:15px;}
+#loginScreen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;}
+.login-card{background:white;border-radius:16px;padding:32px 24px;max-width:360px;width:100%;box-shadow:0 8px 32px rgba(42,20,24,0.12);}
+.login-title{font-family:"Noto Serif TC",serif;font-size:22px;font-weight:700;color:var(--brand-red-deep);text-align:center;margin-bottom:6px;}
+.login-sub{font-size:12px;color:var(--muted);text-align:center;margin-bottom:24px;letter-spacing:1px;}
+.store-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;}
+.store-btn{padding:16px 8px;border-radius:10px;border:2px solid var(--rule);background:var(--paper);font-size:16px;font-weight:700;color:var(--ink-soft);cursor:pointer;transition:all .15s;}
+.store-btn.active{border-color:var(--brand-red);background:var(--brand-red);color:white;}
+.login-input{width:100%;padding:12px 14px;border:2px solid var(--rule);border-radius:10px;font-size:16px;margin-bottom:14px;background:var(--paper);color:var(--ink);}
+.login-input:focus{outline:none;border-color:var(--brand-gold);}
+.login-submit{width:100%;padding:13px;border-radius:10px;border:none;background:var(--brand-red);color:white;font-size:16px;font-weight:700;cursor:pointer;}
+.login-submit:active{background:var(--brand-red-deep);}
+.login-error{color:var(--strike);font-size:13px;text-align:center;margin-top:10px;min-height:18px;}
+.topbar{background:linear-gradient(135deg,var(--brand-red),var(--brand-red-deep));color:var(--paper);padding:16px 18px;text-align:center;position:relative;}
+.topbar-store{font-size:11px;letter-spacing:3px;color:var(--brand-gold-light);font-weight:700;}
+.topbar-title{font-family:"Noto Serif TC",serif;font-size:19px;font-weight:700;margin-top:4px;}
+.logout-btn{position:absolute;right:14px;top:16px;background:rgba(255,255,255,0.15);border:none;color:white;font-size:11px;padding:6px 10px;border-radius:99px;cursor:pointer;}
+.admin-toggle-btn{position:absolute;left:14px;top:16px;background:rgba(255,255,255,0.15);border:none;color:white;font-size:11px;padding:6px 10px;border-radius:99px;cursor:pointer;}
+.admin-toggle-btn.on{background:var(--brand-gold);color:var(--brand-red-deep);font-weight:700;}
+.day-pills{display:flex;gap:6px;padding:14px 16px 10px;overflow-x:auto;}
+.day-pill{flex:1;text-align:center;padding:10px 0;border-radius:10px;background:white;border:1.5px solid var(--rule);font-weight:700;font-size:14px;color:var(--ink-soft);cursor:pointer;min-width:38px;}
+.day-pill.active{background:var(--brand-red);border-color:var(--brand-red-deep);color:white;}
+.progress-bar{display:flex;align-items:center;gap:10px;padding:0 16px 12px;}
+.progress-text{font-size:12px;color:var(--muted);white-space:nowrap;}
+.progress-track{flex:1;height:6px;background:var(--paper-deep);border-radius:99px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--brand-gold);border-radius:99px;transition:width .3s;}
+.main-content{padding:0 14px 100px;}
+.vendor-card{background:white;border:1.5px solid var(--rule);border-left:4px solid var(--rule);border-radius:10px;margin-bottom:12px;overflow:hidden;}
+.vendor-card.done{border-left-color:var(--keep);}
+.vendor-head{display:flex;align-items:flex-start;gap:12px;padding:14px;cursor:pointer;}
+.vendor-circle{width:26px;height:26px;border-radius:50%;border:2.5px solid var(--brand-red);flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:2px;background:white;font-size:14px;color:transparent;}
+.vendor-circle.checked{background:var(--keep);border-color:var(--keep);color:white;}
+.vendor-info{flex:1;min-width:0;}
+.vendor-name{font-size:17px;font-weight:800;color:var(--ink);}
+.vendor-meta{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5;}
+.vendor-payment{font-size:11px;color:var(--brand-red);margin-top:2px;font-weight:600;}
+.vendor-tag{flex-shrink:0;font-size:10px;font-weight:800;letter-spacing:1px;background:var(--brand-red);color:white;padding:3px 9px;border-radius:99px;}
+.vendor-chevron{margin-left:4px;color:var(--muted);transition:transform .2s;flex-shrink:0;}
+.vendor-card.open .vendor-chevron{transform:rotate(180deg);}
+.vendor-detail{display:none;border-top:1px solid var(--rule);padding:14px;background:var(--paper);}
+.vendor-card.open .vendor-detail{display:block;}
+.tool-tabs{display:flex;background:var(--paper-deep);border-radius:9px;padding:3px;margin-bottom:12px;gap:3px;}
+.tool-tab{flex:1;text-align:center;padding:8px 4px;border-radius:7px;font-size:12.5px;font-weight:700;cursor:pointer;color:var(--muted);}
+.tool-tab.active{background:white;color:var(--brand-red-deep);box-shadow:0 1px 3px rgba(0,0,0,0.08);}
+.ol-group-title{font-size:11px;letter-spacing:2px;color:var(--brand-red);font-weight:800;margin:12px 0 6px;}
+.ol-group-title:first-child{margin-top:0;}
+.ol-row{background:white;border:1.5px solid var(--rule);border-left:3px solid var(--rule);border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;}
+.ol-row.on{border-left-color:var(--brand-red);background:#fdf6ec;}
+.ol-info{flex:1;min-width:0;}
+.ol-name{font-size:14.5px;font-weight:700;color:var(--ink);}
+.ol-note{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.45;}
+.ol-ctrl{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.ol-btn{width:30px;height:30px;border-radius:8px;border:1.5px solid var(--brand-gold);background:white;font-size:17px;font-weight:800;color:var(--brand-red-deep);display:flex;align-items:center;justify-content:center;}
+.ol-btn.plus{background:var(--brand-gold);color:white;}
+.ol-qv{font-size:15px;font-weight:800;color:var(--ink);min-width:28px;text-align:center;}
+.ol-unit{font-size:11px;color:var(--muted);font-weight:600;}
+.ol-unit-btn{font-size:11px;font-weight:800;color:var(--brand-red-deep);background:var(--brand-gold);border:1.5px solid var(--brand-gold);padding:4px 8px;border-radius:6px;min-width:34px;}
+.ol-pack-select{font-size:13px;font-weight:700;color:var(--brand-red-deep);background:white;border:1.5px solid var(--brand-gold);border-radius:8px;padding:6px 8px;min-width:120px;}
+.ol-export{margin-top:14px;background:var(--paper-deep);border:1.5px solid var(--brand-gold);border-radius:10px;overflow:hidden;}
+.ol-export-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;}
+.ol-export-title{font-size:12.5px;font-weight:800;color:var(--brand-red-deep);}
+.ol-export-cnt{font-size:11px;color:var(--muted);margin-top:2px;}
+.ol-export-btn{font-size:11px;font-weight:700;padding:6px 10px;border-radius:7px;border:1.5px solid var(--brand-gold);background:white;color:var(--brand-red-deep);}
+.ol-export-text{padding:10px 12px;white-space:pre-wrap;font-size:12.5px;color:var(--ink-soft);background:white;margin:0 10px 10px;border-radius:7px;border:1px dashed var(--rule);min-height:30px;}
+.calc-group-title{font-size:10px;letter-spacing:2px;color:var(--brand-red);font-weight:700;margin:10px 0 5px;}
+.calc-item{display:flex;align-items:flex-start;gap:8px;padding:9px 0;border-bottom:1px solid var(--rule);}
+.calc-cbox{width:18px;height:18px;border:2px solid var(--brand-red);border-radius:4px;flex-shrink:0;margin-top:1px;}
+.calc-cbox.checked{background:var(--brand-red);}
+.calc-iname{font-size:14px;font-weight:700;color:var(--ink);}
+.calc-idetail{font-size:11px;color:var(--muted);margin-top:2px;}
+.calc-result{margin-top:14px;background:var(--brand-red);color:white;border-radius:10px;overflow:hidden;}
+.calc-result-head{padding:10px 14px;font-size:12.5px;font-weight:800;letter-spacing:1px;background:var(--brand-red-deep);}
+.calc-rrow{padding:9px 14px;border-bottom:1px solid rgba(255,255,255,0.15);display:flex;justify-content:space-between;align-items:center;}
+.calc-rname{font-size:13px;font-weight:700;}
+.calc-rspec{font-size:9px;opacity:0.7;display:block;}
+.calc-rvals{text-align:right;}
+.calc-rg{font-size:11px;opacity:0.85;display:block;}
+.calc-rpack{font-size:15px;font-weight:800;color:var(--brand-gold-light);}
+.admin-bar{background:var(--brand-gold);padding:10px 14px;display:flex;justify-content:space-between;align-items:center;}
+.admin-bar-label{font-size:12px;font-weight:800;color:var(--brand-red-deep);}
+.admin-add-btn{background:var(--brand-red);color:white;border:none;padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:700;}
+.admin-row-actions{display:flex;gap:6px;margin-top:8px;}
+.admin-edit-btn,.admin-del-btn{flex:1;padding:7px;border-radius:7px;font-size:11.5px;font-weight:700;border:1.5px solid;}
+.admin-edit-btn{border-color:var(--brand-gold);color:var(--brand-red-deep);background:white;}
+.admin-del-btn{border-color:var(--strike);color:var(--strike);background:white;}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(42,20,24,0.5);z-index:1000;align-items:flex-end;justify-content:center;}
+.modal-overlay.show{display:flex;}
+.modal-box{background:white;width:100%;max-width:480px;border-radius:18px 18px 0 0;max-height:88vh;overflow-y:auto;padding:20px 18px 28px;}
+.modal-title{font-size:17px;font-weight:800;color:var(--brand-red-deep);margin-bottom:16px;}
+.form-group{margin-bottom:14px;}
+.form-label{font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:5px;display:block;}
+.form-input,.form-select,.form-textarea{width:100%;padding:10px 12px;border:1.5px solid var(--rule);border-radius:8px;font-size:15px;background:var(--paper);}
+.form-textarea{min-height:60px;resize:vertical;}
+.form-row{display:flex;gap:8px;}
+.form-row .form-group{flex:1;}
+.day-check-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.day-check{text-align:center;padding:8px 0;border-radius:7px;border:1.5px solid var(--rule);font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;}
+.day-check.order{background:var(--brand-red);color:white;border-color:var(--brand-red-deep);}
+.day-check.deliver{background:var(--brand-gold);color:var(--brand-red-deep);border-color:var(--brand-gold);}
+.modal-btns{display:flex;gap:10px;margin-top:18px;}
+.modal-btn{flex:1;padding:12px;border-radius:9px;font-size:14.5px;font-weight:700;border:none;}
+.modal-btn.save{background:var(--brand-red);color:white;}
+.modal-btn.cancel{background:var(--paper-deep);color:var(--ink-soft);}
+.checkbox-row{display:flex;align-items:center;gap:8px;padding:8px 0;}
+.checkbox-row input{width:18px;height:18px;}
+.subform-list{border:1px dashed var(--rule);border-radius:8px;padding:10px;margin-top:6px;}
+.subform-item{background:var(--paper);border-radius:7px;padding:8px 10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;}
+.subform-item-del{color:var(--strike);font-size:12px;font-weight:700;}
+.small-add-btn{font-size:12px;font-weight:700;color:var(--brand-red);background:none;border:1px dashed var(--brand-red);padding:6px 10px;border-radius:7px;width:100%;margin-top:4px;}
+.loading-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;color:var(--muted);}
+.hidden{display:none !important;}
+</style>
+</head>
+<body>
+<div id="loadingScreen" class="loading-screen">載入中…</div>
+<div id="loginScreen" class="hidden">
+<div class="login-card">
+<div class="login-title">餐飲廠商用量整合管理系統</div>
+<div class="login-sub">請選擇分店並輸入密碼</div>
+<div class="store-grid" id="storeGrid"></div>
+<input type="password" id="pwInput" class="login-input" placeholder="請輸入密碼" inputmode="numeric">
+<button class="login-submit" onclick="attemptLogin()">登入</button>
+<div class="login-error" id="loginError"></div>
+</div>
+</div>
+<div id="mainScreen" class="hidden">
+<div class="topbar">
+<button class="admin-toggle-btn" id="adminToggleBtn" onclick="toggleAdminMode()">管理模式</button>
+<button class="logout-btn" onclick="logout()">登出</button>
+<div class="topbar-store" id="topbarStore"></div>
+<div class="topbar-title">叫貨總覽</div>
+</div>
+<div class="day-pills" id="dayPills"></div>
+<div class="progress-bar">
+<div class="progress-text">完成 <span id="doneCount">0</span>/<span id="totalCount">0</span></div>
+<div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+</div>
+<div id="adminBar" class="admin-bar hidden">
+<div class="admin-bar-label">管理模式 ・ 可新增刪除廠商/品項/計算機</div>
+<div style="display:flex;gap:6px;">
+<button class="admin-add-btn" onclick="importSeedData()" id="importBtn" style="background:var(--brand-gold);color:var(--brand-red-deep);">匯入仁武店範例</button>
+<button class="admin-add-btn" onclick="openVendorEditor(null)">＋新增廠商</button>
+</div>
+</div>
+<div class="main-content" id="vendorList"></div>
+</div>
+<div class="modal-overlay" id="vendorModal">
+<div class="modal-box">
+<div class="modal-title" id="vendorModalTitle">新增廠商</div>
+<div class="form-group">
+<label class="form-label">廠商名稱</label>
+<input type="text" id="vf_name" class="form-input" placeholder="例如：菜商">
+</div>
+<div class="form-group">
+<label class="form-label">叫貨日（點一下＝叫貨，再點一下＝送貨，再點一下＝取消）</label>
+<div class="day-check-grid" id="vf_schedule"></div>
+</div>
+<div class="form-group">
+<label class="form-label">備註</label>
+<textarea id="vf_note" class="form-textarea" placeholder="例如：六日休"></textarea>
+</div>
+<div class="form-group">
+<label class="form-label">付款方式</label>
+<input type="text" id="vf_payment" class="form-input" placeholder="例如：月底結">
+</div>
+<div class="checkbox-row">
+<input type="checkbox" id="vf_hasOrderList">
+<label for="vf_hasOrderList" style="font-size:13.5px;">啟用叫貨單（品項 +/− 調數量、一鍵複製）</label>
+</div>
+<div class="checkbox-row">
+<input type="checkbox" id="vf_hasCalculator">
+<label for="vf_hasCalculator" style="font-size:13.5px;">啟用用量計算機（自訂材料與配方加總）</label>
+</div>
+<div class="modal-btns">
+<button class="modal-btn cancel" onclick="closeModal('vendorModal')">取消</button>
+<button class="modal-btn save" onclick="saveVendor()">儲存</button>
+</div>
+</div>
+</div>
+<div class="modal-overlay" id="itemModal">
+<div class="modal-box">
+<div class="modal-title" id="itemModalTitle">新增品項</div>
+<div class="form-group">
+<label class="form-label">分組名稱</label>
+<input type="text" id="if_group" class="form-input" placeholder="例如：主要蔬菜">
+</div>
+<div class="form-group">
+<label class="form-label">品項名稱</label>
+<input type="text" id="if_name" class="form-input" placeholder="例如：茄子">
+</div>
+<div class="form-row">
+<div class="form-group">
+<label class="form-label">單位</label>
+<input type="text" id="if_unit" class="form-input" placeholder="例如：斤">
+</div>
+<div class="form-group">
+<label class="form-label">每次 +/− 幅度</label>
+<input type="number" id="if_step" class="form-input" value="1" step="0.1">
+</div>
+</div>
+<div class="form-group">
+<label class="form-label">備註（判斷規則）</label>
+<input type="text" id="if_note" class="form-input" placeholder="例如：16 盒以下叫">
+</div>
+<div class="checkbox-row">
+<input type="checkbox" id="if_useUnitSwitch" onchange="toggleUnitSwitchFields()">
+<label for="if_useUnitSwitch" style="font-size:13.5px;">啟用單位切換（例如 斤／公斤）</label>
+</div>
+<div id="unitSwitchFields" class="hidden" style="background:var(--paper);border-radius:8px;padding:10px;margin-bottom:10px;">
+<div class="form-row">
+<div class="form-group">
+<label class="form-label">副單位名稱</label>
+<input type="text" id="if_unit2" class="form-input" placeholder="例如：公斤">
+</div>
+<div class="form-group">
+<label class="form-label">換算比例（1 主單位＝？副單位）</label>
+<input type="number" id="if_ratio" class="form-input" placeholder="例如 0.6" step="0.01">
+</div>
+</div>
+</div>
+<div class="checkbox-row">
+<input type="checkbox" id="if_usePackSelect" onchange="togglePackSelectFields()">
+<label for="if_usePackSelect" style="font-size:13.5px;">改用下拉選單選「幾包」（自動換算成主單位）</label>
+</div>
+<div id="packSelectFields" class="hidden" style="background:var(--paper);border-radius:8px;padding:10px;margin-bottom:10px;">
+<div class="form-row">
+<div class="form-group">
+<label class="form-label">1 包＝多少（主單位）</label>
+<input type="number" id="if_perPack" class="form-input" placeholder="例如 2.4" step="0.01">
+</div>
+<div class="form-group">
+<label class="form-label">最多幾包</label>
+<input type="number" id="if_maxPacks" class="form-input" value="20">
+</div>
+</div>
+</div>
+<div class="modal-btns">
+<button class="modal-btn cancel" onclick="closeModal('itemModal')">取消</button>
+<button class="modal-btn save" onclick="saveItem()">儲存</button>
+</div>
+</div>
+</div>
+<div class="modal-overlay" id="ingredientModal">
+<div class="modal-box">
+<div class="modal-title" id="ingredientModalTitle">新增材料</div>
+<div class="form-group">
+<label class="form-label">材料名稱</label>
+<input type="text" id="gf_name" class="form-input" placeholder="例如：醬油">
+</div>
+<div class="form-row">
+<div class="form-group">
+<label class="form-label">每罐/包規格數量</label>
+<input type="number" id="gf_spec" class="form-input" placeholder="例如 1000">
+</div>
+<div class="form-group">
+<label class="form-label">規格單位</label>
+<input type="text" id="gf_u" class="form-input" placeholder="例如 ml">
+</div>
+</div>
+<div class="form-group">
+<label class="form-label">包裝單位名稱</label>
+<input type="text" id="gf_unit" class="form-input" placeholder="例如：罐">
+</div>
+<div class="modal-btns">
+<button class="modal-btn cancel" onclick="closeModal('ingredientModal')">取消</button>
+<button class="modal-btn save" onclick="saveIngredient()">儲存</button>
+</div>
+</div>
+</div>
+<div class="modal-overlay" id="productModal">
+<div class="modal-box">
+<div class="modal-title" id="productModalTitle">新增製品配方</div>
+<div class="form-group">
+<label class="form-label">製品名稱</label>
+<input type="text" id="pf_name" class="form-input" placeholder="例如：腿庫">
+</div>
+<div class="form-group">
+<label class="form-label">分組（例如：每天固定 / 視叫貨）</label>
+<input type="text" id="pf_group" class="form-input" placeholder="例如：每天固定">
+</div>
+<div class="form-group">
+<label class="form-label">配方（勾選這個製品時，各材料要用多少）</label>
+<div class="subform-list" id="pf_usageList"></div>
+<button type="button" class="small-add-btn" onclick="addUsageRow()">＋加一項材料用量</button>
+</div>
+<div class="modal-btns">
+<button class="modal-btn cancel" onclick="closeModal('productModal')">取消</button>
+<button class="modal-btn save" onclick="saveProduct()">儲存</button>
+</div>
+</div>
+</div>
+<script>
+window.addEventListener('error', function(e){
+const el = document.getElementById('loadingScreen');
+if(el){
+el.classList.remove('hidden');
+el.innerHTML = '<div style="padding:20px;text-align:left;font-size:13px;color:#c14a3a;white-space:pre-wrap;word-break:break-all;">'
++ '發生錯誤，請把這段文字截圖回報：\n\n'
++ (e.message||'未知錯誤') + '\n'
++ (e.filename? ('檔案: '+e.filename+'\n') : '')
++ (e.lineno? ('行數: '+e.lineno+':'+e.colno) : '')
++ '</div>';
+}
+document.querySelectorAll('.topbar,.day-pills,.progress-bar,#adminBar').forEach(x=>{ if(x) x.style.display='none'; });
+});
+const SEED_DATA_RENWU = {"v_22397": {"name": "菜商", "schedule": {"1": "order", "2": "order", "3": "order", "4": "order", "5": "order", "6": "order"}, "note": "週六叫貨要注意：需叫日、一兩天的菜量", "payment": "月底結", "hasOrderList": true, "hasCalculator": true, "orderList": {"groups": [{"title": "主要蔬菜", "rows": [{"id": "qiezi", "name": "茄子", "unit": "斤", "step": 0.5, "note": "15 盒以下叫 4 斤"}, {"id": "xhg", "name": "小黃瓜", "unit": "斤", "step": 0.5, "note": "12 盒以下叫 2.5 斤"}, {"id": "hyc", "name": "花椰菜", "unit": "朵", "step": 0.5, "note": "冰箱剩半盒叫 2 朵"}, {"id": "hxg", "name": "鴻禧菇", "unit": "包", "step": 0.5, "note": "剩半包叫 1 包"}, {"id": "dbc", "name": "大白菜", "unit": "斤", "step": 0.5, "note": "7 斤半組"}, {"id": "kxc", "name": "空心菜", "unit": "斤", "step": 0.5, "note": "約 6 斤 1 籃"}, {"id": "dlm", "name": "大陸妹", "unit": "斤", "step": 0.5, "note": "約 6 斤 1 籃"}, {"id": "qcong", "name": "青蔥", "unit": "斤", "step": 0.5, "note": "蔥花半斤/盒、大骨、牛筋、大腸需蔥結；豬肝 2 根、豬耳朵 20g"}, {"id": "qc", "name": "芹菜", "unit": "斤", "step": 0.5, "note": "半斤約 1 盒"}, {"id": "hlb", "name": "紅蘿蔔", "unit": "根", "step": 0.5, "note": "75g 小黃瓜使用"}, {"id": "xxg", "name": "鮮香菇", "unit": "斤", "step": 0.5, "note": "一天約用半斤"}, {"id": "ng", "name": "南瓜", "unit": "斤", "step": 0.5, "note": "剩 8 盒以下叫貨 2 斤"}, {"id": "yt", "name": "油條", "unit": "根", "step": 0.5, "note": "冷凍剩 1 小包叫 5 根"}]}, {"title": "滷味類", "rows": [{"id": "hdp", "name": "海帶片", "unit": "斤", "step": 0.5, "note": "3 斤約 1 盒"}, {"id": "dhdg", "name": "大黑豆乾", "unit": "包", "step": 0.5, "note": "1 包 10 片｜10 片約半盒"}]}, {"title": "辛香料・醃漬類", "rows": [{"id": "js", "name": "薑絲", "unit": "包", "step": 0.5, "note": "庫存 2 包"}, {"id": "suc", "name": "蒜碎", "unit": "包", "step": 0.5, "note": "用於：茄子、豬肝、四季豆、白菜滷、滷味"}, {"id": "sun", "name": "蒜泥", "unit": "包", "step": 0.5, "note": "1 天約 1 包"}, {"id": "sur", "name": "蒜仁", "unit": "包", "step": 0.5, "note": "肉燥半組 1.5 包、1 組 3 包"}, {"id": "dlj", "name": "大辣椒", "unit": "斤", "step": 0.5, "note": "用途：四季豆、茄子、豬肝、酸菜、豬耳朵"}, {"id": "lj", "name": "老薑", "unit": "斤", "step": 0.5, "note": "剩 2 塊叫半斤"}, {"id": "ctj", "
+"}, {"id": "weilin", "name": "味霖", "unit": "罐", "step": 1, "note": "剩半罐以下再叫"}]}]}}, "v_28112": {"name": "樺憶", "schedule": {"0": "order", "1": "order", "2": "order", "3": "order", "4": "order"}, "note": "日到四叫；肉燥袋、腿庫袋等每款剩 2 袋就叫貨，製作需 1 個月以上", "payment": "25號結", "hasOrderList": true, "hasCalculator": false, "orderList": {"groups": [{"title": "叫貨品項", "rows": [{"id": "tw260", "name": "260 湯碗", "unit": "箱", "step": 1, "note": "可叫半箱"}, {"id": "d180", "name": "D180", "unit": "箱", "step": 1, "note": ""}]}]}}, "v_95677": {"name": "全超", "schedule": {"1": "order", "2": "order", "3": "order", "4": "order", "5": "order", "6": "order"}, "note": "一到六送貨", "payment": "付現（發票-物料）", "hasOrderList": true, "hasCalculator": false, "orderList": {"groups": [{"title": "叫貨品項", "rows": [{"id": "njin", "name": "牛筋", "unit": "公斤", "step": 10, "note": "10 公斤 1 箱", "perPack": 10}, {"id": "zwh", "name": "豬五花肉片", "unit": "包", "step": 1, "note": "1 包 3KG", "perPack": 1}]}], "footer": "謝謝🙏"}}}
+;
+
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDSzqzM1WvHxZL_maNh9mNCdMEIC1iJ92s",
+  authDomain: "yu1116-24b7d.firebaseapp.com",
+  databaseURL: "https://yu1116-24b7d-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "yu1116-24b7d",
+  storageBucket: "yu1116-24b7d.firebasestorage.app",
+  messagingSenderId: "701053947235",
+  appId: "1:701053947235:web:274e2bc3d7315816a11756"
+};
+if(typeof firebase === 'undefined'){
+  document.addEventListener('DOMContentLoaded', function(){
+    const el = document.getElementById('loadingScreen');
+    el.classList.remove('hidden');
+    el.innerHTML = '<div style="padding:20px;text-align:center;font-size:14px;color:#c14a3a;">'
+      + 'Firebase 載入失敗，請確認網路連線正常，並改用 Safari 瀏覽器開啟此頁面（不要用 App 內建的預覽視窗）。'
+      + '</div>';
+  });
+  throw new Error('Firebase SDK 未載入成功');
+}
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const STORES = [
+  {id:"renwu", name:"仁武", password:"1111"},
+  {id:"chengqing", name:"澄清", password:"2222"},
+  {id:"nanzi", name:"楠梓", password:"3333"},
+  {id:"anping", name:"安平", password:"4444"},
+];
+
+const DAY_NAMES = ["日","一","二","三","四","五","六"];
+
+let currentStore = null;
+let selectedStoreForLogin = null;
+let vendors = {};
+let currentDay = new Date().getDay();
+let openVendorId = null;
+let openTool = {};
+let checkedVendors = {};
+let orderQty = {};
+let orderUnitIdx = {};
+let calcChecked = {};
+let adminMode = false;
+let editingVendorId = null;
+let editingItemCtx = null;
+let editingIngredientCtx = null;
+let editingProductCtx = null;
+
+function initLoginScreen(){
+  const grid = document.getElementById('storeGrid');
+  grid.innerHTML = STORES.map(s=>
+    `<button class="store-btn" id="storeBtn_${s.id}" onclick="selectStore('${s.id}')">${s.name}</button>`
+  ).join('');
+  document.getElementById('loadingScreen').classList.add('hidden');
+  document.getElementById('loginScreen').classList.remove('hidden');
+  const saved = localStorage.getItem('vaso_store');
+  if(saved && STORES.find(s=>s.id===saved)){
+    currentStore = saved;
+    enterMainScreen();
+  }
+}
+function selectStore(id){
+  selectedStoreForLogin = id;
+  STORES.forEach(s=>{
+    document.getElementById('storeBtn_'+s.id).classList.toggle('active', s.id===id);
+  });
+}
+function attemptLogin(){
+  const err = document.getElementById('loginError');
+  if(!selectedStoreForLogin){ err.textContent = '請先選擇分店'; return; }
+  const store = STORES.find(s=>s.id===selectedStoreForLogin);
+  const pw = document.getElementById('pwInput').value;
+  if(pw !== store.password){ err.textContent = '密碼錯誤'; return; }
+  err.textContent = '';
+  currentStore = store.id;
+  localStorage.setItem('vaso_store', store.id);
+  enterMainScreen();
+}
+function logout(){
+  localStorage.removeItem('vaso_store');
+  location.reload();
+}
+function enterMainScreen(){
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('mainScreen').classList.remove('hidden');
+  const storeName = STORES.find(s=>s.id===currentStore).name;
+  document.getElementById('topbarStore').textContent = storeName + '店';
+  renderDayPills();
+  listenVendors();
+}
+function vendorsRef(){ return db.ref('stores/'+currentStore+'/vendors'); }
+function vendorRef(id){ return db.ref('stores/'+currentStore+'/vendors/'+id); }
+function listenVendors(){
+  vendorsRef().on('value', snap=>{
+    vendors = snap.val() || {};
+    renderVendorList();
+  });
+}
+function genId(prefix){
+  return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+}
+function renderDayPills(){
+  const el = document.getElementById('dayPills');
+  el.innerHTML = DAY_NAMES.map((name,idx)=>
+    `<div class="day-pill ${idx===currentDay?'active':''}" onclick="setDay(${idx})">${name}</div>`
+  ).join('');
+}
+function setDay(idx){
+  currentDay = idx;
+  renderDayPills();
+  renderVendorList();
+}
+function toggleAdminMode(){
+  adminMode = !adminMode;
+  document.getElementById('adminToggleBtn').classList.toggle('on', adminMode);
+  document.getElementById('adminBar').classList.toggle('hidden', !adminMode);
+  renderVendorList();
+}
+function renderVendorList(){
+  const el = document.getElementById('vendorList');
+  const ids = Object.keys(vendors);
+  let showIds = ids;
+  if(!adminMode){
+    showIds = ids.filter(id=>{
+      const v = vendors[id];
+      return v.schedule && v.schedule[currentDay]==='order';
+    });
+  }
+  let doneCount=0;
+  showIds.forEach(id=>{ if(checkedVendors[id]) doneCount++; });
+  document.getElementById('doneCount').textContent = doneCount;
+  document.getElementById('totalCount').textContent = showIds.length;
+  document.getElementById('progressFill').style.width = showIds.length ? (doneCount/showIds.length*100)+'%' : '0%';
+  if(showIds.length===0){
+    el.innerHTML = `<div style="text-align:center;color:var(--muted);padding:40px 20px;font-size:13px;">
+      ${adminMode ? '目前沒有廠商，點上方「＋新增廠商」開始建立' : '今天沒有廠商要叫貨'}
+    </div>`;
+    return;
+  }
+  el.innerHTML = showIds.map(id=>renderVendorCard(id)).join('');
+}
+function scheduleLabel(v){
+  const parts = [];
+  DAY_NAMES.forEach((dn,idx)=>{
+    const s = v.schedule && v.schedule[idx];
+    if(s==='order') parts.push(dn+'叫');
+    if(s==='deliver') parts.push(dn+'送');
+  });
+  return parts.join('、');
+}
+function renderVendorCard(id){
+  const v = vendors[id];
+  const isOpen = openVendorId===id;
+  const isChecked = !!checkedVendors[id];
+  const tool = openTool[id] || (v.hasOrderList ? 'order' : 'calc');
+  let adminActions = '';
+  if(adminMode){
+    adminActions = `<div class="admin-row-actions">
+      <button class="admin-edit-btn" onclick="event.stopPropagation();openVendorEditor('${id}')">編輯廠商</button>
+      <button class="admin-del-btn" onclick="event.stopPropagation();deleteVendor('${id}')">刪除廠商</button>
+    </div>`;
+  }
+  let detailHtml = '';
+  if(isOpen){
+    let tabsHtml = '';
+    if(v.hasOrderList && v.hasCalculator){
+      tabsHtml = `<div class="tool-tabs">
+        <div class="tool-tab ${tool==='calc'?'active':''}" onclick="setTool('${id}','calc')">計算機</div>
+        <div class="tool-tab ${tool==='order'?'active':''}" onclick="setTool('${id}','order')">叫貨單</div>
+      </div>`;
+    }
+    let bodyHtml = '';
+    if(tool==='order' && v.hasOrderList){
+      bodyHtml = renderOrderList(id);
+    } else if(tool==='calc' && v.hasCalculator){
+      bodyHtml = renderCalculator(id);
+    } else if(!v.hasOrderList && !v.hasCalculator){
+      bodyHtml = `<div style="text-align:center;color:var(--muted);padding:16px;font-size:12.5px;">
+        ${adminMode ? '這家廠商還沒啟用叫貨單或計算機，點「編輯廠商」開啟' : '這家廠商尚未設定叫貨單或計算機'}
+      </div>`;
+    }
+    detailHtml = `<div class="vendor-detail">${tabsHtml}${bodyHtml}${adminActions}</div>`;
+  }
+  return `<div class="vendor-card ${isChecked?'done':''} ${isOpen?'open':''}">
+    <div class="vendor-head" onclick="toggleVendorOpen('${id}')">
+      <div class="vendor-circle ${isChecked?'checked':''}" onclick="event.stopPropagation();toggleVendorCheck('${id}')">✓</div>
+      <div class="vendor-info">
+        <div class="vendor-name">${esc(v.name)}</div>
+        <div class="vendor-meta">${esc(scheduleLabel(v))}${v.note?' ・ '+esc(v.note):''}</div>
+        ${v.payment?`<div class="vendor-payment">${esc(v.payment)}</div>`:''}
+      </div>
+      <div class="vendor-tag">叫貨</div>
+      <div class="vendor-chevron">▾</div>
+    </div>
+    ${detailHtml}
+  </div>`;
+}
+function esc(s){
+  if(s==null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function toggleVendorOpen(id){
+  openVendorId = (openVendorId===id) ? null : id;
+  renderVendorList();
+}
+function toggleVendorCheck(id){
+  checkedVendors[id] = !checkedVendors[id];
+  renderVendorList();
+}
+function setTool(id,tool){
+  openTool[id] = tool;
+  renderVendorList();
+}
+function ensureOrderState(vid){
+  if(!orderQty[vid]) orderQty[vid]={};
+  if(!orderUnitIdx[vid]) orderUnitIdx[vid]={};
+  const v = vendors[vid];
+  if(v.orderList && v.orderList.groups){
+    v.orderList.groups.forEach(g=>{
+      (g.rows||[]).forEach(r=>{
+        if(!(r.id in orderQty[vid])) orderQty[vid][r.id]=0;
+      });
+    });
+  }
+}
+function renderOrderList(vid){
+  ensureOrderState(vid);
+  const v = vendors[vid];
+  if(!v.orderList || !v.orderList.groups || v.orderList.groups.length===0){
+    return `<div style="text-align:center;color:var(--muted);padding:12px;font-size:12.5px;">
+      ${adminMode?'尚未新增任何品項':'尚無品項'}
+    </div>` + (adminMode?`<button class="admin-add-btn" style="width:100%;margin-top:8px;" onclick="openItemEditor('${vid}',null)">＋新增品項</button>`:'');
+  }
+  let html = '';
+  v.orderList.groups.forEach((g,gi)=>{
+    html += `<div class="ol-group-title">${esc(g.title||'品項')}</div>`;
+    (g.rows||[]).forEach((r,ri)=>{
+      const q = orderQty[vid][r.id]||0;
+      const isOn = q>0;
+      const qStr = (q%1===0)?String(q):String(Math.round(q*100)/100);
+      let ctrlHtml;
+      if(r.packSelect){
+        const per = r.packSelect.perPack;
+        const maxN = r.packSelect.maxPacks||20;
+        const curPacks = per ? Math.round((q/per)*100)/100 : 0;
+        let opts = `<option value="0">未叫貨</option>`;
+        for(let n=1;n<=maxN;n++){
+          const kg = Math.round(n*per*100)/100;
+          opts += `<option value="${n}" ${curPacks===n?'selected':''}>${kg}${r.unit}｜${n} 包</option>`;
+        }
+        ctrlHtml = `<select class="ol-pack-select" onchange="setPackQty('${vid}','${r.id}',this.value,${per})">${opts}</select>`;
+      } else {
+        let unitHtml;
+        if(r.unit2){
+          const idx = orderUnitIdx[vid][r.id]||0;
+          const curUnit = idx===0 ? r.unit : r.unit2;
+          unitHtml = `<button class="ol-unit-btn" onclick="toggleItemUnit('${vid}','${r.id}')">${esc(curUnit)}</button>`;
+        } else {
+          unitHtml = `<span class="ol-unit">${esc(r.unit||'')}</span>`;
+        }
+        ctrlHtml = `<button class="ol-btn" onclick="adjustQty('${vid}','${r.id}',-1)">−</button>
+          <span class="ol-qv">${qStr}</span>${unitHtml}
+          <button class="ol-btn plus" onclick="adjustQty('${vid}','${r.id}',1)">＋</button>`;
+      }
+      let adminRowActions='';
+      if(adminMode){
+        adminRowActions = `<div class="admin-row-actions">
+          <button class="admin-edit-btn" onclick="openItemEditor('${vid}',{gi:${gi},ri:${ri}})">編輯</button>
+          <button class="admin-del-btn" onclick="deleteItem('${vid}',${gi},${ri})">刪除</button>
+        </div>`;
+      }
+      html += `<div class="ol-row ${isOn?'on':''}" style="flex-wrap:wrap;">
+        <div class="ol-info">
+          <div class="ol-name">${esc(r.name)}</div>
+          ${r.note?`<div class="ol-note">${esc(r.note)}</div>`:''}
+          ${adminRowActions}
+        </div>
+        <div class="ol-ctrl">${ctrlHtml}</div>
+      </div>`;
+    });
+  });
+  if(adminMode){
+    html += `<button class="admin-add-btn" style="width:100%;margin-top:4px;" onclick="openItemEditor('${vid}',null)">＋新增品項</button>`;
+  }
+  const text = exportOrderText(vid);
+  html += `<div class="ol-export">
+    <div class="ol-export-head">
+      <div>
+        <div class="ol-export-title">匯出叫貨單</div>
+        <div class="ol-export-cnt">${text?'已選擇品項':'尚未選擇任何品項'}</div>
+      </div>
+      <button class="ol-export-btn" onclick="copyOrderText('${vid}')">複製</button>
+    </div>
+    <div class="ol-export-text">${esc(text)||'（尚無內容）'}</div>
+  </div>`;
+  return html;
+}
+function adjustQty(vid,itemId,delta){
+  ensureOrderState(vid);
+  const row = findItemRow(vid,itemId);
+  if(!row) return;
+  let step = row.step||1;
+  if(row.unit2 && row.stepUnit2!=null){
+    const idx = orderUnitIdx[vid][itemId]||0;
+    if(idx===1) step = row.stepUnit2;
+  }
+  const cur = orderQty[vid][itemId]||0;
+  orderQty[vid][itemId] = Math.max(0, Math.round((cur+step*delta)*100)/100);
+  renderVendorList();
+}
+function setPackQty(vid,itemId,packs,perPack){
+  ensureOrderState(vid);
+  orderQty[vid][itemId] = Math.round(parseFloat(packs)*parseFloat(perPack)*100)/100;
+  renderVendorList();
+}
+function toggleItemUnit(vid,itemId){
+  ensureOrderState(vid);
+  const row = findItemRow(vid,itemId);
+  if(!row || !row.unit2) return;
+  const curIdx = orderUnitIdx[vid][itemId]||0;
+  const newIdx = curIdx===0?1:0;
+  const q = orderQty[vid][itemId]||0;
+  const ratio = row.unitRatio||1;
+  if(q>0){
+    if(newIdx===1){ orderQty[vid][itemId] = Math.round(q*ratio*100)/100; }
+    else { orderQty[vid][itemId] = Math.round(q/ratio*100)/100; }
+  }
+  orderUnitIdx[vid][itemId] = newIdx;
+  renderVendorList();
+}
+function findItemRow(vid,itemId){
+  const v = vendors[vid];
+  if(!v.orderList) return null;
+  let found=null;
+  (v.orderList.groups||[]).forEach(g=>(g.rows||[]).forEach(r=>{ if(r.id===itemId) found=r; }));
+  return found;
+}
+function exportOrderText(vid){
+  const v = vendors[vid];
+  if(!v.orderList) return '';
+  const lines=[];
+  (v.orderList.groups||[]).forEach(g=>(g.rows||[]).forEach(r=>{
+    const q = orderQty[vid][r.id]||0;
+    if(q>0){
+      const qStr = (q%1===0)?String(q):String(Math.round(q*100)/100);
+      const idx = orderUnitIdx[vid][r.id]||0;
+      const unit = (idx===1 && r.unit2) ? r.unit2 : r.unit;
+      let suffix='';
+      const perPackVal = r.perPack || (r.packSelect ? r.packSelect.perPack : null);
+      if(perPackVal && Math.abs(q-perPackVal) > 0.001){
+        suffix = ` （${perPackVal}${unit} 1包）`;
+      } else if(r.suffix && !perPackVal){
+        suffix = ' '+r.suffix;
+      }
+      lines.push(`${r.name} ${qStr} ${unit}${suffix}`);
+    }
+  }));
+  if(lines.length===0) return '';
+  const storeName = STORES.find(s=>s.id===currentStore).name;
+  let out = storeName+'店\n'+lines.join('\n');
+  if(v.orderList.footer) out += '\n\n'+v.orderList.footer;
+  return out;
+}
+function copyOrderText(vid){
+  const text = exportOrderText(vid);
+  if(!text){ alert('尚未選擇任何品項'); return; }
+  navigator.clipboard.writeText(text).then(()=>{
+    alert('已複製！可以貼到 LINE 了');
+  }).catch(()=>{
+    alert('複製失敗，請手動選取文字複製');
+  });
+}
+function renderCalculator(vid){
+  const v = vendors[vid];
+  const calc = v.calculator;
+  if(!calc || !calc.ingredients || calc.ingredients.length===0){
+    let html = `<div style="text-align:center;color:var(--muted);padding:12px;font-size:12.5px;">
+      ${adminMode?'尚未設定任何材料':'尚無計算機內容'}
+    </div>`;
+    if(adminMode){
+      html += `<button class="admin-add-btn" style="width:100%;margin-top:8px;" onclick="openIngredientEditor('${vid}',null)">＋新增材料</button>`;
+    }
+    return html;
+  }
+  if(!calcChecked[vid]) calcChecked[vid]={};
+  let html='';
+  const groups = {};
+  (calc.products||[]).forEach((p,pi)=>{
+    const g = p.group||'其他';
+    if(!groups[g]) groups[g]=[];
+    groups[g].push({p,pi});
+  });
+  Object.keys(groups).forEach(gname=>{
+    html += `<div class="calc-group-title">${esc(gname)}</div>`;
+    groups[gname].forEach(({p,pi})=>{
+      const checked = !!calcChecked[vid][p.id];
+      const detail = Object.entries(p.usage||{}).map(([ing,amt])=>{
+        const ingDef = calc.ingredients.find(i=>i.id===ing);
+        return `${ingDef?ingDef.name:ing}${amt}`;
+      }).join('・');
+      let adminActions='';
+      if(adminMode){
+        adminActions = `<div class="admin-row-actions">
+          <button class="admin-edit-btn" onclick="openProductEditor('${vid}',${pi})">編輯</button>
+          <button class="admin-del-btn" onclick="deleteProduct('${vid}',${pi})">刪除</button>
+        </div>`;
+      }
+      html += `<div class="calc-item">
+        <div class="calc-cbox ${checked?'checked':''}" onclick="toggleCalcCheck('${vid}','${p.id}')"></div>
+        <div style="flex:1;">
+          <div class="calc-iname">${esc(p.name)}</div>
+          <div class="calc-idetail">${esc(detail)}</div>
+          ${adminActions}
+        </div>
+      </div>`;
+    });
+  });
+  if(adminMode){
+    html += `<div style="display:flex;gap:8px;margin-top:10px;">
+      <button class="admin-add-btn" style="flex:1;" onclick="openIngredientEditor('${vid}',null)">＋材料</button>
+      <button class="admin-add-btn" style="flex:1;" onclick="openProductEditor('${vid}',null)">＋製品配方</button>
+    </div>`;
+  }
+  const totals = {};
+  (calc.products||[]).forEach(p=>{
+    if(calcChecked[vid][p.id]){
+      Object.entries(p.usage||{}).forEach(([ing,amt])=>{
+        totals[ing] = (totals[ing]||0)+amt;
+      });
+    }
+  });
+  const totalKeys = Object.keys(totals);
+  if(totalKeys.length>0){
+    html += `<div class="calc-result">
+      <div class="calc-result-head">需要叫的總量</div>`;
+    totalKeys.forEach(ingId=>{
+      const ing = calc.ingredients.find(i=>i.id===ingId);
+      if(!ing) return;
+      const raw = totals[ingId];
+      const packs = (raw/ing.spec).toFixed(2);
+      html += `<div class="calc-rrow">
+        <div class="calc-rname">${esc(ing.name)}<span class="calc-rspec">${ing.spec}${esc(ing.u)}/${esc(ing.unit)}</span></div>
+        <div class="calc-rvals"><span class="calc-rg">${raw}${esc(ing.u)}</span><span class="calc-rpack">${packs} ${esc(ing.unit)}</span></div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+  return html;
+}
+function toggleCalcCheck(vid,pid){
+  if(!calcChecked[vid]) calcChecked[vid]={};
+  calcChecked[vid][pid] = !calcChecked[vid][pid];
+  renderVendorList();
+}
+function openVendorEditor(vid){
+  editingVendorId = vid;
+  const v = vid ? vendors[vid] : {name:'',schedule:{},note:'',payment:'',hasOrderList:false,hasCalculator:false};
+  document.getElementById('vendorModalTitle').textContent = vid?'編輯廠商':'新增廠商';
+  document.getElementById('vf_name').value = v.name||'';
+  document.getElementById('vf_note').value = v.note||'';
+  document.getElementById('vf_payment').value = v.payment||'';
+  document.getElementById('vf_hasOrderList').checked = !!v.hasOrderList;
+  document.getElementById('vf_hasCalculator').checked = !!v.hasCalculator;
+  const sched = v.schedule||{};
+  const grid = document.getElementById('vf_schedule');
+  grid.innerHTML = DAY_NAMES.map((dn,idx)=>{
+    const s = sched[idx]||'';
+    return `<div class="day-check ${s}" data-day="${idx}" onclick="cycleScheduleDay(this)">${dn}</div>`;
+  }).join('');
+  openModal('vendorModal');
+}
+function cycleScheduleDay(el){
+  const states = ['', 'order', 'deliver'];
+  let curState = '';
+  if(el.classList.contains('order')) curState='order';
+  else if(el.classList.contains('deliver')) curState='deliver';
+  const idx = states.indexOf(curState);
+  const next = states[(idx+1)%states.length];
+  el.classList.remove('order','deliver');
+  if(next) el.classList.add(next);
+}
+function saveVendor(){
+  const name = document.getElementById('vf_name').value.trim();
+  if(!name){ alert('請輸入廠商名稱'); return; }
+  const schedule = {};
+  document.querySelectorAll('#vf_schedule .day-check').forEach(el=>{
+    const day = el.dataset.day;
+    if(el.classList.contains('order')) schedule[day]='order';
+    else if(el.classList.contains('deliver')) schedule[day]='deliver';
+  });
+  const data = {
+    name,
+    schedule,
+    note: document.getElementById('vf_note').value.trim(),
+    payment: document.getElementById('vf_payment').value.trim(),
+    hasOrderList: document.getElementById('vf_hasOrderList').checked,
+    hasCalculator: document.getElementById('vf_hasCalculator').checked,
+  };
+  const id = editingVendorId || genId('v');
+  if(editingVendorId && vendors[editingVendorId]){
+    if(vendors[editingVendorId].orderList) data.orderList = vendors[editingVendorId].orderList;
+    if(vendors[editingVendorId].calculator) data.calculator = vendors[editingVendorId].calculator;
+  }
+  vendorRef(id).set(data).then(()=>{
+    closeModal('vendorModal');
+  }).catch(e=>alert('儲存失敗：'+e.message));
+}
+function deleteVendor(id){
+  if(!confirm('確定要刪除「'+(vendors[id]?vendors[id].name:'')+'」這家廠商嗎？此動作無法復原。')) return;
+  vendorRef(id).remove().then(()=>{
+    if(openVendorId===id) openVendorId=null;
+  }).catch(e=>alert('刪除失敗：'+e.message));
+}
+function openItemEditor(vid,ctx){
+  editingItemCtx = ctx ? {vid, ...ctx} : {vid};
+  document.getElementById('itemModalTitle').textContent = ctx?'編輯品項':'新增品項';
+  let row = {}, groupTitle='';
+  if(ctx){
+    const v = vendors[vid];
+    const g = v.orderList.groups[ctx.gi];
+    groupTitle = g.title;
+    row = g.rows[ctx.ri];
+  }
+  document.getElementById('if_group').value = groupTitle;
+  document.getElementById('if_name').value = row.name||'';
+  document.getElementById('if_unit').value = row.unit||'';
+  document.getElementById('if_step').value = row.step||1;
+  document.getElementById('if_note').value = row.note||'';
+  document.getElementById('if_useUnitSwitch').checked = !!row.unit2;
+  document.getElementById('if_unit2').value = row.unit2||'';
+  document.getElementById('if_ratio').value = row.unitRatio||'';
+  toggleUnitSwitchFields();
+  document.getElementById('if_usePackSelect').checked = !!row.packSelect;
+  document.getElementById('if_perPack').value = row.packSelect?row.packSelect.perPack:'';
+  document.getElementById('if_maxPacks').value = row.packSelect?row.packSelect.maxPacks:20;
+  togglePackSelectFields();
+  openModal('itemModal');
+}
+function toggleUnitSwitchFields(){
+  document.getElementById('unitSwitchFields').classList.toggle('hidden', !document.getElementById('if_useUnitSwitch').checked);
+}
+function togglePackSelectFields(){
+  document.getElementById('packSelectFields').classList.toggle('hidden', !document.getElementById('if_usePackSelect').checked);
+}
+function saveItem(){
+  const {vid, gi, ri} = editingItemCtx;
+  const groupTitle = document.getElementById('if_group').value.trim()||'品項';
+  const name = document.getElementById('if_name').value.trim();
+  if(!name){ alert('請輸入品項名稱'); return; }
+  const row = {
+    id: (gi!=null && ri!=null) ? vendors[vid].orderList.groups[gi].rows[ri].id : genId('item'),
+    name,
+    unit: document.getElementById('if_unit').value.trim()||'個',
+    step: parseFloat(document.getElementById('if_step').value)||1,
+    note: document.getElementById('if_note').value.trim(),
+  };
+  if(document.getElementById('if_useUnitSwitch').checked){
+    row.unit2 = document.getElementById('if_unit2').value.trim();
+    row.unitRatio = parseFloat(document.getElementById('if_ratio').value)||1;
+  }
+  if(document.getElementById('if_usePackSelect').checked){
+    row.packSelect = {
+      perPack: parseFloat(document.getElementById('if_perPack').value)||1,
+      maxPacks: parseInt(document.getElementById('if_maxPacks').value)||20
+    };
+    row.perPack = row.packSelect.perPack;
+  }
+  const v = JSON.parse(JSON.stringify(vendors[vid]));
+  if(!v.orderList) v.orderList = {groups:[]};
+  if(gi!=null && ri!=null){
+    v.orderList.groups[gi].rows.splice(ri,1);
+    if(v.orderList.groups[gi].rows.length===0) v.orderList.groups.splice(gi,1);
+  }
+  let targetGroup = v.orderList.groups.find(g=>g.title===groupTitle);
+  if(!targetGroup){
+    targetGroup = {title:groupTitle, rows:[]};
+    v.orderList.groups.push(targetGroup);
+  }
+  targetGroup.rows.push(row);
+  vendorRef(vid).child('orderList').set(v.orderList).then(()=>{
+    closeModal('itemModal');
+  }).catch(e=>alert('儲存失敗：'+e.message));
+}
+function deleteItem(vid,gi,ri){
+  if(!confirm('確定要刪除這個品項嗎？')) return;
+  const v = JSON.parse(JSON.stringify(vendors[vid]));
+  v.orderList.groups[gi].rows.splice(ri,1);
+  if(v.orderList.groups[gi].rows.length===0) v.orderList.groups.splice(gi,1);
+  vendorRef(vid).child('orderList').set(v.orderList).catch(e=>alert('刪除失敗：'+e.message));
+}
+function openIngredientEditor(vid,ingId){
+  editingIngredientCtx = {vid, ingId};
+  document.getElementById('ingredientModalTitle').textContent = ingId?'編輯材料':'新增材料';
+  let ing = {};
+  if(ingId){
+    const calc = vendors[vid].calculator;
+    ing = calc.ingredients.find(i=>i.id===ingId) || {};
+  }
+  document.getElementById('gf_name').value = ing.name||'';
+  document.getElementById('gf_spec').value = ing.spec||'';
+  document.getElementById('gf_u').value = ing.u||'';
+  document.getElementById('gf_unit').value = ing.unit||'';
+  openModal('ingredientModal');
+}
+function saveIngredient(){
+  const {vid, ingId} = editingIngredientCtx;
+  const name = document.getElementById('gf_name').value.trim();
+  if(!name){ alert('請輸入材料名稱'); return; }
+  const ing = {
+    id: ingId || genId('ing'),
+    name,
+    spec: parseFloat(document.getElementById('gf_spec').value)||1,
+    u: document.getElementById('gf_u').value.trim()||'g',
+    unit: document.getElementById('gf_unit').value.trim()||'包',
+  };
+  const v = JSON.parse(JSON.stringify(vendors[vid]));
+  if(!v.calculator) v.calculator = {ingredients:[],products:[]};
+  if(!v.calculator.ingredients) v.calculator.ingredients=[];
+  const idx = v.calculator.ingredients.findIndex(i=>i.id===ing.id);
+  if(idx>=0) v.calculator.ingredients[idx]=ing;
+  else v.calculator.ingredients.push(ing);
+  vendorRef(vid).child('calculator').set(v.calculator).then(()=>{
+    closeModal('ingredientModal');
+  }).catch(e=>alert('儲存失敗：'+e.message));
+}
+let currentUsageRows = [];
+function openProductEditor(vid,pi){
+  editingProductCtx = {vid, pi};
+  document.getElementById('productModalTitle').textContent = (pi!=null)?'編輯製品配方':'新增製品配方';
+  const calc = vendors[vid].calculator || {ingredients:[],products:[]};
+  let p = {};
+  if(pi!=null) p = calc.products[pi];
+  document.getElementById('pf_name').value = p.name||'';
+  document.getElementById('pf_group').value = p.group||'';
+  currentUsageRows = p.usage ? Object.entries(p.usage).map(([ingredientId,amount])=>({ingredientId,amount})) : [];
+  renderUsageRows(vid);
+  openModal('productModal');
+}
+function renderUsageRows(vid){
+  const calc = vendors[vid].calculator || {ingredients:[]};
+  const el = document.getElementById('pf_usageList');
+  if(currentUsageRows.length===0){
+    el.innerHTML = `<div style="font-size:12px;color:var(--muted);text-align:center;">尚未加入材料</div>`;
+    return;
+  }
+  el.innerHTML = currentUsageRows.map((row,idx)=>{
+    const options = (calc.ingredients||[]).map(ing=>
+      `<option value="${ing.id}" ${ing.id===row.ingredientId?'selected':''}>${esc(ing.name)}</option>`
+    ).join('');
+    return `<div class="subform-item" style="flex-direction:column;align-items:stretch;gap:6px;">
+      <div style="display:flex;gap:6px;">
+        <select class="form-select" style="flex:1;" onchange="currentUsageRows[${idx}].ingredientId=this.value">
+          ${options}
+        </select>
+        <input type="number" class="form-input" style="width:90px;" value="${row.amount||''}" placeholder="用量"
+          onchange="currentUsageRows[${idx}].amount=parseFloat(this.value)||0">
+        <button class="subform-item-del" onclick="removeUsageRow(${idx},'${vid}')">刪除</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function addUsageRow(){
+  const vid = editingProductCtx.vid;
+  const calc = vendors[vid].calculator || {ingredients:[]};
+  if(!calc.ingredients || calc.ingredients.length===0){
+    alert('請先新增材料，才能設定配方');
+    return;
+  }
+  currentUsageRows.push({ingredientId:calc.ingredients[0].id, amount:0});
+  renderUsageRows(vid);
+}
+function removeUsageRow(idx,vid){
+  currentUsageRows.splice(idx,1);
+  renderUsageRows(vid);
+}
+function saveProduct(){
+  const {vid, pi} = editingProductCtx;
+  const name = document.getElementById('pf_name').value.trim();
+  if(!name){ alert('請輸入製品名稱'); return; }
+  const usage = {};
+  currentUsageRows.forEach(r=>{ if(r.ingredientId) usage[r.ingredientId]=r.amount||0; });
+  const p = {
+    id: (pi!=null) ? vendors[vid].calculator.products[pi].id : genId('prod'),
+    name,
+    group: document.getElementById('pf_group').value.trim()||'其他',
+    usage,
+  };
+  const v = JSON.parse(JSON.stringify(vendors[vid]));
+  if(!v.calculator) v.calculator = {ingredients:[],products:[]};
+  if(!v.calculator.products) v.calculator.products=[];
+  if(pi!=null) v.calculator.products[pi]=p;
+  else v.calculator.products.push(p);
+  vendorRef(vid).child('calculator').set(v.calculator).then(()=>{
+    closeModal('productModal');
+  }).catch(e=>alert('儲存失敗：'+e.message));
+}
+function deleteProduct(vid,pi){
+  if(!confirm('確定要刪除這個製品配方嗎？')) return;
+  const v = JSON.parse(JSON.stringify(vendors[vid]));
+  v.calculator.products.splice(pi,1);
+  vendorRef(vid).child('calculator').set(v.calculator).catch(e=>alert('刪除失敗：'+e.message));
+}
+function importSeedData(){
+  if(Object.keys(vendors).length>0){
+    if(!confirm('目前已經有廠商資料了。匯入範例資料「不會」覆蓋或刪除現有廠商，只會補上缺少的部分。確定要繼續嗎？')) return;
+  } else {
+    if(!confirm('要匯入「仁武店」範例資料（22 家廠商，含現成的叫貨單與計算機設定）嗎？適合第一次設定、或想參考範例時使用。')) return;
+  }
+  const updates = {};
+  Object.entries(SEED_DATA_RENWU).forEach(([vid,v])=>{
+    if(!vendors[vid]) updates[vid]=v;
+  });
+  if(Object.keys(updates).length===0){
+    alert('範例資料已經都匯入過了');
+    return;
+  }
+  const promises = Object.entries(updates).map(([vid,v])=>vendorRef(vid).set(v));
+  Promise.all(promises).then(()=>{
+    alert('匯入完成！共新增 '+Object.keys(updates).length+' 家廠商');
+  }).catch(e=>alert('匯入失敗：'+e.message));
+}
+function openModal(id){ document.getElementById(id).classList.add('show'); }
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+try{
+  initLoginScreen();
+}catch(e){
+  const el = document.getElementById('loadingScreen');
+  el.classList.remove('hidden');
+  el.innerHTML = '<div style="padding:20px;text-align:left;font-size:13px;color:#c14a3a;white-space:pre-wrap;word-break:break-all;">'
+    + '啟動失敗，請把這段文字截圖回報：\n\n' + (e.stack||e.message) + '</div>';
+}
+</script>
+</body>
+</html>
